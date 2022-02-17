@@ -3,18 +3,16 @@ import matplotlib.pyplot as plt
 from pandas.core.indexes import numeric
 import seaborn as sns
 from sklearn.model_selection import cross_val_score, train_test_split
-from sklearn.metrics import make_scorer, mean_squared_error, r2_score, mean_absolute_error
+from sklearn.metrics import make_scorer, mean_squared_error
 from rgf.sklearn import RGFRegressor
-from sklearn.ensemble import RandomForestRegressor
 import numpy as np
 from sklearn.impute import SimpleImputer
-from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import OneHotEncoder, LabelEncoder, OrdinalEncoder
 from sklearn.pipeline import Pipeline
 import time
 start = time.time()
 airbnb_london_listing = './londonairbnb/listings_detailed.csv'
 airbnb_data = pd.read_csv(airbnb_london_listing)
+#
 airbnb_data['price'] = airbnb_data['price'].str.replace('$', '', regex=True)
 airbnb_data['price'] = airbnb_data['price'].str.replace(
     ',', '', regex=True).astype(float)
@@ -38,20 +36,25 @@ airbnb_data['extra_people'] = airbnb_data['extra_people'].str.replace(
     '$', '', regex=True)
 airbnb_data['extra_people'] = airbnb_data['extra_people'].str.replace(
     ',', '', regex=True).astype(float)
+# this section is just changing the price column into a float value
 
+#
 columntf = ['require_guest_profile_picture', 'require_guest_phone_verification', 'host_is_superhost', 'host_has_profile_pic',
             'host_identity_verified', 'is_location_exact', 'has_availability', 'requires_license', 'instant_bookable', 'is_business_travel_ready']
 
 airbnb_data[columntf] = airbnb_data[columntf].replace({'t': 1, 'f': 0})
-
+# this section is replacing true and false (t and f) with 1 and 0
 
 # print(airbnb_data.columns[airbnb_data.isnull().mean() > 0.50])
 
+#
 missing_more_than_50 = list(
     airbnb_data.columns[airbnb_data.isnull().mean() > 0.50])
 
 airbnb_data = airbnb_data.drop(missing_more_than_50, axis=1)
+# this section is dropping columns that are missing > 50% of their data.
 
+#
 numerical_ix = airbnb_data.select_dtypes(include=['int64', 'float64']).columns
 numeric_transformer = Pipeline(steps=[
     ('imputer', SimpleImputer(missing_values=np.NaN, strategy='mean'))
@@ -68,12 +71,15 @@ categorical_transformer = Pipeline(steps=[
 
 airbnb_data[categorical_ix] = categorical_transformer.fit_transform(
     airbnb_data[categorical_ix])
+# This section is filling in the data missing for the columns with less than 50% missing
 
-
+#
 airbnb_data['host_acceptance_rate'] = airbnb_data['host_acceptance_rate'].str.replace(
     '%', '', regex=True).astype(float)
 airbnb_data['host_acceptance_rate'] = airbnb_data['host_acceptance_rate'] * 0.01
+# this section is just changing the percentage into a float value
 
+#
 ids = ['id', 'scrape_id', 'host_id']
 airbnb_data = airbnb_data.drop(ids, axis=1)
 
@@ -81,6 +87,7 @@ urls = ['listing_url', 'picture_url',
         'host_url', 'host_thumbnail_url', 'host_picture_url']
 
 airbnb_data = airbnb_data.drop(urls, axis=1)
+# this section, we are just getting rid of columns that are unneccessary for us
 
 # summary and description have same info, but description has less null values
 # same with street and city
@@ -152,74 +159,6 @@ X_train, X_test, y_train, y_test = train_test_split(
 
 
 print("Starting rgf")
-# totalrgfscoresleaf = []
-# max_leaf_values = [1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000]
-# for i in max_leaf_values:
-
-#     rgf = RGFRegressor(max_leaf=i,
-#                        algorithm="RGF_Sib",
-#                        test_interval=500,
-#                        loss="LS",
-#                        verbose=True)
-
-#     my_pipeline = Pipeline(steps=[('model', rgf)])
-
-#     n_folds = 3
-#     rgf_scores = cross_val_score(my_pipeline,
-#                                  X_train,
-#                                  y_train,
-#                                  scoring=make_scorer(mean_squared_error),
-#                                  cv=n_folds)
-
-#     rgf_score = sum(rgf_scores)/n_folds
-#     totalrgfscoresleaf.append(rgf_score)
-
-# result = np.where(np.array(totalrgfscoresleaf) ==
-#                   np.amin(np.array(totalrgfscoresleaf)))
-
-# totalrgfscoresinterval = []
-# max_interval_values = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000]
-# for i in max_interval_values:
-
-#     rgf = RGFRegressor(max_leaf=max_leaf_values[result[0][0]],
-#                        algorithm="RGF_Sib",
-#                        test_interval=i,
-#                        loss="LS",
-#                        verbose=True)
-
-#     my_pipeline = Pipeline(steps=[('model', rgf)])
-
-#     n_folds = 3
-#     rgf_scores = cross_val_score(my_pipeline,
-#                                  X_train,
-#                                  y_train,
-#                                  scoring=make_scorer(mean_squared_error),
-#                                  cv=n_folds)
-
-#     rgf_score = sum(rgf_scores)/n_folds
-#     totalrgfscoresinterval.append(rgf_score)
-# fig = plt.figure(1)
-# plt.plot(max_leaf_values, totalrgfscoresleaf, color="blue",
-#          label="Score", marker="o")
-# plt.text(max_leaf_values[result[0][0]], totalrgfscoresleaf[result[0][0]], ' {} , {}'.format(
-#     (max_leaf_values[result[0][0]], totalrgfscoresleaf[result[0][0]])))
-
-# plt.legend(loc="lower right")
-# plt.xlabel("max_leaf_values")
-# plt.ylabel("Score Values")
-
-# max_interval_values_best = np.where(np.array(totalrgfscoresinterval) ==
-#                                     np.amin(np.array(totalrgfscoresinterval)))
-
-# fig = plt.figure(2)
-# plt.plot(max_interval_values, totalrgfscoresinterval, color="blue",
-#          label="Score", marker="o")
-# plt.text(max_interval_values[max_interval_values_best[0][0]], totalrgfscoresinterval[max_interval_values_best[0][0]], ' {} , {}'.format(
-#     (max_interval_values[max_interval_values_best[0][0]], totalrgfscoresinterval[max_interval_values_best[0][0]])))
-
-# plt.legend(loc="lower right")
-# plt.xlabel("max_interval_values")
-# plt.ylabel("Score Values")
 
 rgf = RGFRegressor(max_leaf=10000,
                    algorithm="RGF_Sib",
