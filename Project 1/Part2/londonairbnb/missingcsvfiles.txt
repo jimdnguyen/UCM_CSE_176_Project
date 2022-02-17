@@ -1,0 +1,3 @@
+listings_detailed.csv
+reviews detailed.csv
+small_listings_detailed.csv
