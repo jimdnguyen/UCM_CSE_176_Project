@@ -1,7 +1,5 @@
 import pandas as pd
 import matplotlib.pyplot as plt
-from pandas.core.indexes import numeric
-import seaborn as sns
 from sklearn.model_selection import cross_val_score, train_test_split
 from sklearn.metrics import make_scorer, mean_squared_error
 from rgf.sklearn import RGFRegressor
